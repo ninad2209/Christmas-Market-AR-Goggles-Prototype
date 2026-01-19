@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Christmas AR Goggles - G94</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- AR Viewport Container -->
+    <div id="ar-viewport">
+        <!-- Christmas Market Background (Reality Layer) -->
+        <div id="reality-layer"></div>
+
+        <!-- AR Overlay Layer -->
+        <div id="ar-overlay">
+            <!-- Status Bar - Always visible at top -->
+            <header id="status-bar">
+                <div class="status-left">
+                    <span class="status-icon">🎄</span>
+                    <span id="app-title">Christmas AR Goggles</span>
+                </div>
+                <div class="status-center">
+                    <span id="active-goal">Welcome to the Christmas Market</span>
+                </div>
+                <div class="status-right">
+                    <span id="time-display"></span>
+                    <!-- Menu Toggle Button -->
+                    <button id="menu-toggle" class="menu-toggle-btn gaze-target" aria-label="Toggle Menu"
+                        aria-expanded="false">
+                        <span class="hamburger-icon">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main id="main-content">
+                <!-- Food Category Panel -->
+                <div id="food-panel" class="ar-panel view-panel hidden">
+                    <button class="panel-back-btn gaze-target" data-back="food">← Back</button>
+                    <h2 class="panel-title">What are you looking for?</h2>
+                    <div class="filter-grid">
+                        <button class="filter-item gaze-target" data-filter="vegan">
+                            <span class="filter-icon">🌱</span>
+                            <span class="filter-label">Vegan</span>
+                        </button>
+                        <button class="filter-item gaze-target" data-filter="vegetarian">
+                            <span class="filter-icon">🥗</span>
+                            <span class="filter-label">Vegetarian</span>
+                        </button>
+                        <button class="filter-item gaze-target" data-filter="halal">
+                            <span class="filter-icon">☪️</span>
+                            <span class="filter-label">Halal</span>
+                        </button>
+                        <button class="filter-item gaze-target" data-filter="glutenfree">
+                            <span class="filter-icon">🌾</span>
+                            <span class="filter-label">Gluten-Free</span>
+                        </button>
+                        <button class="filter-item gaze-target" data-filter="drinks">
+                            <span class="filter-icon">🍺</span>
+                            <span class="filter-label">Drinks</span>
+                        </button>
+                        <button class="filter-item gaze-target" data-filter="sweets">
+                            <span class="filter-icon">🍪</span>
+                            <span class="filter-label">Sweets</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stall Info Card (appears when navigating) -->
+                <div id="stall-card" class="stall-info-card hidden">
+                    <div class="stall-header">
+                        <h3 id="stall-name" class="stall-name">VegaMax</h3>
+                        <span id="stall-type" class="stall-type">Closest Vegan Stall</span>
+                    </div>
+                    <div class="stall-details">
+                        <div class="stall-stat">
+                            <span class="stat-icon">📍</span>
+                            <span id="stall-distance" class="stat-value">120m</span>
+                        </div>
+                        <div class="stall-stat">
+                            <span class="stat-icon">⏱️</span>
+                            <span id="stall-wait" class="stat-value">~5 min wait</span>
+                        </div>
+                        <div class="stall-stat">
+                            <span class="stat-icon">⭐</span>
+                            <span id="stall-rating" class="stat-value">4.5</span>
+                        </div>
+                    </div>
+                    <div class="stall-actions">
+                        <button class="stall-btn gaze-target" data-action="start-nav">
+                            <span>🧭</span> Navigate
+                        </button>
+                        <button class="stall-btn secondary gaze-target" data-action="more-options">
+                            <span>📋</span> More Options
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stall List Panel (Scenario 3 - Multiple stall selection) -->
+                <div id="stall-list-panel" class="ar-panel view-panel hidden">
+                    <button class="panel-back-btn gaze-target" data-back="stall-list">← Back</button>
+                    <h2 class="panel-title">Available Stalls</h2>
+                    <p class="panel-subtitle">Best match shown first based on rating, distance & wait time</p>
+                    <div class="stall-list scrollable-content" id="stall-list">
+                        <!-- Stall items will be populated by JavaScript -->
+                    </div>
+                    <div class="panel-actions">
+                        <button class="panel-btn gaze-target" id="navigate-selected-btn"
+                            data-action="navigate-selected">
+                            <span>🧭</span> Navigate to Selected
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Facilities Panel -->
+                <div id="facilities-panel" class="ar-panel view-panel hidden">
+                    <button class="panel-back-btn gaze-target" data-back="facilities">← Back</button>
+                    <h2 class="panel-title">Facilities</h2>
+                    <div class="facilities-grid">
+                        <button class="facility-item gaze-target" data-facility="wc">
+                            <span class="facility-icon">🚻</span>
+                            <span class="facility-label">Restrooms</span>
+                            <span class="facility-distance">50m away</span>
+                        </button>
+                        <button class="facility-item gaze-target" data-facility="info">
+                            <span class="facility-icon">ℹ️</span>
+                            <span class="facility-label">Info Point</span>
+                            <span class="facility-distance">80m away</span>
+                        </button>
+                        <button class="facility-item gaze-target" data-facility="firstaid">
+                            <span class="facility-icon">🏥</span>
+                            <span class="facility-label">First Aid</span>
+                            <span class="facility-distance">150m away</span>
+                        </button>
+                        <button class="facility-item gaze-target" data-facility="atm">
+                            <span class="facility-icon">💳</span>
+                            <span class="facility-label">ATM</span>
+                            <span class="facility-distance">90m away</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Continue Prompt (after diversion) -->
+                <div id="continue-prompt" class="continue-dialog hidden">
+                    <div class="prompt-content">
+                        <h3 class="prompt-title">Continue to <span id="continue-destination">VegaMax</span>?</h3>
+                        <div class="prompt-buttons">
+                            <button class="prompt-btn confirm gaze-target" data-action="continue-yes">
+                                <span class="btn-icon">✓</span>
+                                <span class="btn-label">Yes</span>
+                            </button>
+                            <button class="prompt-btn cancel gaze-target" data-action="continue-no">
+                                <span class="btn-icon">✕</span>
+                                <span class="btn-label">No</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- AR Navigation Arrows (overlay on screen) -->
+            <div id="ar-navigation" class="hidden">
+                <div class="nav-arrow nav-arrow-forward">
+                    <div class="arrow-icon">➤</div>
+                    <div class="arrow-distance"><span id="nav-distance">120m</span></div>
+                </div>
+                <!-- Cancel Navigation Button -->
+                <button id="cancel-nav-btn" class="cancel-nav-btn gaze-target" data-action="cancel-nav">
+                    <span class="cancel-icon">✕</span>
+                    <span class="cancel-label">Cancel Navigation</span>
+                </button>
+            </div>
+
+            <!-- Arrived Panel (shows after reaching a stall) -->
+            <div id="arrived-panel" class="arrived-panel hidden">
+                <div class="arrived-content">
+                    <h3 class="arrived-title">🎉 Arrived at <span id="arrived-stall-name">VegaMax</span>!</h3>
+                    <div class="arrived-buttons">
+                        <button id="continue-route-btn" class="arrived-btn continue gaze-target">
+                            <span>➤</span> Continue to Next
+                        </button>
+                        <button id="cancel-route-btn" class="arrived-btn cancel gaze-target">
+                            <span>✕</span> End Route
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================
+                 SCENARIO 2: Group Regrouping Components
+                 ============================================ -->
+
+            <!-- Group Panel (shows group members and status) -->
+            <div id="group-panel" class="ar-panel view-panel hidden">
+                <button class="panel-back-btn gaze-target" data-back="group">← Back</button>
+                <h2 class="panel-title">👥 Your Group</h2>
+                <div class="group-members-list" id="group-members-list">
+                    <!-- Members will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Lost Member Alert (popup when member gets lost) -->
+            <div id="lost-member-alert" class="alert-popup hidden">
+                <div class="alert-content warning">
+                    <div class="alert-icon">⚠️</div>
+                    <h3 class="alert-title">Group Member Lost!</h3>
+                    <p class="alert-message"><span id="lost-member-name">Max</span> is no longer nearby</p>
+                    <button class="alert-btn gaze-target" id="view-lost-member-btn">
+                        View Details
+                    </button>
+                </div>
+            </div>
+
+            <!-- Member Details Modal -->
+            <div id="member-details-modal" class="modal-overlay hidden">
+                <div class="modal-content">
+                    <div class="member-avatar">
+                        <span class="avatar-icon">👤</span>
+                        <span class="member-status-badge lost">LOST</span>
+                    </div>
+                    <h3 class="member-name" id="detail-member-name">Max</h3>
+                    <div class="member-info">
+                        <div class="info-row">
+                            <span class="info-label">📍 Last Location:</span>
+                            <span class="info-value" id="detail-member-location">Coffee Club</span>
+                        </div>
+                    </div>
+                    <div class="member-actions">
+                        <button class="action-btn primary gaze-target" id="common-location-btn">
+                            <span>📍</span> Common Location
+                        </button>
+                        <button class="action-btn secondary gaze-target" id="track-user-btn">
+                            <span>🔍</span> Track User
+                        </button>
+                    </div>
+                    <button class="modal-close gaze-target" id="close-member-modal">✕</button>
+                </div>
+            </div>
+
+            <!-- Common Location Selector -->
+            <div id="location-selector" class="modal-overlay hidden">
+                <div class="modal-content">
+                    <h3 class="modal-title">Select Meeting Point</h3>
+                    <div class="location-options">
+                        <button class="location-option gaze-target" data-location="entrance">
+                            <span class="option-icon">🚪</span>
+                            <span class="option-label">Market Entrance</span>
+                        </button>
+                        <button class="location-option gaze-target" data-location="exit">
+                            <span class="option-icon">🚶</span>
+                            <span class="option-label">Exit Gate</span>
+                        </button>
+                        <button class="location-option gaze-target" data-location="church">
+                            <span class="option-icon">⛪</span>
+                            <span class="option-label">Church Entrance</span>
+                        </button>
+                    </div>
+                    <button class="modal-close gaze-target" id="close-location-modal">✕</button>
+                </div>
+            </div>
+
+            <!-- Time Selector -->
+            <div id="time-selector" class="modal-overlay hidden">
+                <div class="modal-content">
+                    <h3 class="modal-title">When to meet?</h3>
+                    <div class="time-options">
+                        <button class="time-option gaze-target" data-time="15">
+                            <span class="time-value">15</span>
+                            <span class="time-unit">min</span>
+                        </button>
+                        <button class="time-option gaze-target" data-time="30">
+                            <span class="time-value">30</span>
+                            <span class="time-unit">min</span>
+                        </button>
+                        <button class="time-option gaze-target" data-time="60">
+                            <span class="time-value">1</span>
+                            <span class="time-unit">hour</span>
+                        </button>
+                    </div>
+                    <button class="modal-close gaze-target" id="close-time-modal">✕</button>
+                </div>
+            </div>
+
+            <!-- Meet Request Sent Confirmation -->
+            <div id="meet-request-sent" class="alert-popup hidden">
+                <div class="alert-content success">
+                    <div class="alert-icon">✓</div>
+                    <h3 class="alert-title">Request Sent!</h3>
+                    <p class="alert-message">
+                        Meet at <span id="confirm-location">Church Entrance</span><br>
+                        in <span id="confirm-time">30</span> minutes
+                    </p>
+                    <button class="alert-btn gaze-target" id="start-navigation-btn">
+                        Navigate There
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lost Member View: Meet Request Notification -->
+            <div id="meet-request-notification" class="alert-popup hidden">
+                <div class="alert-content info">
+                    <div class="alert-icon">📍</div>
+                    <h3 class="alert-title">Meet the Group</h3>
+                    <p class="alert-message">
+                        At <span id="meet-location">Church Entrance</span><br>
+                        in <span id="meet-time">30</span> minutes
+                    </p>
+                    <div class="alert-buttons">
+                        <button class="alert-btn confirm gaze-target" id="accept-meet-btn">
+                            <span>✓</span> Accept
+                        </button>
+                        <button class="alert-btn cancel gaze-target" id="decline-meet-btn">
+                            <span>✕</span> Decline
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Join Group Now Prompt (after countdown) -->
+            <div id="join-group-prompt" class="alert-popup hidden">
+                <div class="alert-content highlight">
+                    <div class="alert-icon">🎯</div>
+                    <h3 class="alert-title">Join the Group Now!</h3>
+                    <p class="alert-message">Time to head to the meeting point</p>
+                    <button class="alert-btn primary gaze-target" id="join-now-btn">
+                        <span>➤</span> Start Navigation
+                    </button>
+                </div>
+            </div>
+
+            <!-- Group Reunited Notification -->
+            <div id="group-reunited" class="alert-popup hidden">
+                <div class="alert-content celebration">
+                    <div class="alert-icon">🎉</div>
+                    <h3 class="alert-title">Group Reunited!</h3>
+                    <p class="alert-message">Everyone is back together</p>
+                    <button class="alert-btn gaze-target" id="dismiss-reunited-btn">
+                        Continue
+                    </button>
+                </div>
+            </div>
+
+            <!-- Max Declined Notification (shown to leader) -->
+            <div id="max-declined-alert" class="alert-popup hidden">
+                <div class="alert-content info">
+                    <div class="alert-icon">📍</div>
+                    <h3 class="alert-title">Max Declined</h3>
+                    <p class="alert-message">
+                        Max will come to<br>
+                        <span id="declined-location">your current location</span>
+                    </p>
+                    <button class="alert-btn gaze-target" id="dismiss-declined-btn">
+                        Wait Here
+                    </button>
+                </div>
+            </div>
+
+            <!-- Collapsible Side Menu (Top-Right Corner) -->
+            <nav id="side-menu" class="collapsed">
+                <div class="menu-items">
+                    <button class="menu-item gaze-target" data-action="discovery" title="Find Food & Drinks">
+                        <span class="menu-icon">🍽️</span>
+                        <span class="menu-label">Food & Drinks</span>
+                    </button>
+                    <button class="menu-item gaze-target" data-action="navigation" title="Navigation">
+                        <span class="menu-icon">🗺️</span>
+                        <span class="menu-label">Navigation</span>
+                    </button>
+                    <button class="menu-item gaze-target" data-action="group" title="Group Management">
+                        <span class="menu-icon">👥</span>
+                        <span class="menu-label">Group</span>
+                    </button>
+                    <button class="menu-item gaze-target" data-action="attractions" title="Attractions">
+                        <span class="menu-icon">🎡</span>
+                        <span class="menu-label">Attractions</span>
+                    </button>
+                    <button class="menu-item gaze-target" data-action="facilities" title="Facilities">
+                        <span class="menu-icon">🚻</span>
+                        <span class="menu-label">Facilities</span>
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Gaze Reticle (Hidden by default) -->
+            <div id="gaze-reticle" class="hidden">
+                <div class="reticle-outer"></div>
+                <div class="reticle-inner"></div>
+                <svg class="reticle-progress" viewBox="0 0 100 100">
+                    <circle class="progress-ring" cx="50" cy="50" r="45"></circle>
+                </svg>
+            </div>
+
+            <!-- Gesture Feedback Overlay -->
+            <div id="gesture-feedback" class="hidden">
+                <div class="gesture-icon"></div>
+            </div>
+
+            <!-- Wizard Dashboard (Bottom-Left Corner) -->
+            <aside id="wizard-dashboard">
+                <div class="dashboard-header">
+                    <span class="dashboard-icon">🎮</span>
+                    <span class="dashboard-title">Wizard Controls</span>
+                </div>
+                <div class="dashboard-controls">
+                    <div class="control-item">
+                        <kbd>G</kbd>
+                        <span>Toggle Gaze</span>
+                    </div>
+                    <div class="control-item">
+                        <kbd>N</kbd>
+                        <span>Nod (Confirm)</span>
+                    </div>
+                    <div class="control-item">
+                        <kbd>S</kbd>
+                        <span>Shake (Cancel)</span>
+                    </div>
+                    <div class="control-item">
+                        <kbd>↑↓</kbd>
+                        <span>Scroll</span>
+                    </div>
+                    <div class="control-item">
+                        <kbd>L</kbd>
+                        <span>Lost Member</span>
+                    </div>
+                    <div class="control-item">
+                        <kbd>M</kbd>
+                        <span>Max's View</span>
+                    </div>
+                    <div class="control-item">
+                        <kbd>ESC</kbd>
+                        <span>Return Home</span>
+                    </div>
+                </div>
+                <div class="dashboard-status">
+                    <span class="status-label">Gaze:</span>
+                    <span id="gaze-status" class="status-value off">OFF</span>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+
+</html>
