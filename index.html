@@ -300,8 +300,23 @@
                         Meet at <span id="confirm-location">Church Entrance</span><br>
                         in <span id="confirm-time">30</span> minutes
                     </p>
-                    <button class="alert-btn gaze-target" id="start-navigation-btn">
-                        Navigate There
+                    <button class="alert-btn gaze-target" id="start-waiting-btn">
+                        OK, I'll Wait
+                    </button>
+                </div>
+            </div>
+
+            <!-- Meeting Countdown Timer -->
+            <div id="meeting-countdown" class="alert-popup hidden">
+                <div class="alert-content info">
+                    <div class="alert-icon">⏱️</div>
+                    <h3 class="alert-title">Waiting to Meet</h3>
+                    <p class="alert-message">
+                        Meet at <span id="countdown-location">Church Entrance</span><br>
+                        <span class="countdown-timer" id="countdown-timer">30</span> seconds remaining
+                    </p>
+                    <button class="alert-btn secondary gaze-target" id="skip-countdown-btn">
+                        Go Now
                     </button>
                 </div>
             </div>

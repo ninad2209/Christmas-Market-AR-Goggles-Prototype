@@ -74,6 +74,7 @@ const AppState = {
     selectedLostMember: null,
     meetingPoint: null,
     meetingTime: null,
+    meetingCountdownTimer: null,  // Timer for meeting countdown
     isLeaderView: true  // Toggle between leader and lost member view
 };
 
@@ -240,15 +241,29 @@ function handlePanelBack(panelType) {
     switch (panelType) {
         case 'food':
             DOM.foodPanel?.classList.add('hidden');
+            // If navigating, restore navigation status
+            if (AppState.isNavigating && AppState.currentDestination) {
+                setActiveGoal(`Navigating to ${AppState.currentDestination}`);
+                return;
+            }
             break;
         case 'stall-list':
             // Go back to food panel
             DOM.stallListPanel?.classList.add('hidden');
             DOM.foodPanel?.classList.remove('hidden');
-            setActiveGoal('What are you looking for?');
+            if (AppState.isNavigating && AppState.currentDestination) {
+                setActiveGoal(`Navigating to ${AppState.currentDestination}`);
+            } else {
+                setActiveGoal('What are you looking for?');
+            }
             return;
         case 'facilities':
             DOM.facilitiesPanel?.classList.add('hidden');
+            // If navigating, restore navigation status
+            if (AppState.isNavigating && AppState.currentDestination) {
+                setActiveGoal(`Navigating to ${AppState.currentDestination}`);
+                return;
+            }
             break;
         case 'group':
             // Only allow closing if no active scenario
@@ -387,8 +402,7 @@ function showContinuePrompt() {
 function handleContinueYes() {
     console.log('Continuing to:', AppState.previousDestination);
 
-    // Change background back to Christmas market
-    document.getElementById('reality-layer').style.backgroundImage = "url('assets/Market.jpg')";
+    // Keep the current background (restroom) - don't change it back
 
     // Restore previous destination
     AppState.currentDestination = AppState.previousDestination;
@@ -744,15 +758,21 @@ function initializeScenario2Handlers() {
         });
     });
 
-    // Start Navigation button
-    document.getElementById('start-navigation-btn')?.addEventListener('click', navigateToMeetingPoint);
+    // Start Waiting button (after confirming meeting request)
+    document.getElementById('start-waiting-btn')?.addEventListener('click', startMeetingCountdown);
+
+    // Skip countdown and go now button
+    document.getElementById('skip-countdown-btn')?.addEventListener('click', skipCountdownAndNavigate);
 
     // Lost member view: Accept/Decline meet request
     document.getElementById('accept-meet-btn')?.addEventListener('click', acceptMeetRequest);
     document.getElementById('decline-meet-btn')?.addEventListener('click', declineMeetRequest);
 
-    // Join Now button
-    document.getElementById('join-now-btn')?.addEventListener('click', startJoinNavigation);
+    // Join Now button (after countdown completes)
+    document.getElementById('join-now-btn')?.addEventListener('click', () => {
+        document.getElementById('join-group-prompt')?.classList.add('hidden');
+        navigateToMeetingPoint();
+    });
 
     // Dismiss reunited notification
     document.getElementById('dismiss-reunited-btn')?.addEventListener('click', dismissReunited);
@@ -924,7 +944,7 @@ function selectMeetingTime(minutes) {
 }
 
 function navigateToMeetingPoint() {
-    document.getElementById('meet-request-sent').classList.add('hidden');
+    document.getElementById('meeting-countdown')?.classList.add('hidden');
 
     // Start navigation to meeting point
     AppState.currentDestination = AppState.meetingPoint.name;
@@ -939,6 +959,54 @@ function navigateToMeetingPoint() {
     setActiveGoal(`Navigating to ${AppState.meetingPoint.name}`);
 
     startNavigationCountdown();
+}
+
+// Start the meeting countdown timer (minutes become seconds for prototype)
+function startMeetingCountdown() {
+    // Hide the confirmation popup
+    document.getElementById('meet-request-sent').classList.add('hidden');
+
+    // Convert minutes to seconds for the prototype (30 min = 30 sec)
+    let remainingSeconds = AppState.meetingTime;
+
+    // Display in the status bar (show "minutes" but actually count in seconds)
+    setActiveGoal(`⏱️ Meeting at ${AppState.meetingPoint.name} in ${remainingSeconds} min`);
+    console.log(`Starting meeting countdown: ${remainingSeconds} seconds (displayed as minutes)`);
+
+    // Clear any existing timer
+    stopMeetingCountdown();
+
+    // Start the countdown interval
+    AppState.meetingCountdownTimer = setInterval(() => {
+        remainingSeconds--;
+
+        if (remainingSeconds <= 0) {
+            stopMeetingCountdown();
+
+            // Show the "Time to go!" prompt
+            document.getElementById('join-group-prompt').classList.remove('hidden');
+            setActiveGoal('⏰ Time to meet! Start navigation?');
+        } else {
+            // Update status bar with remaining time (show as minutes)
+            setActiveGoal(`⏱️ Meeting at ${AppState.meetingPoint.name} in ${remainingSeconds} min`);
+        }
+    }, 1000);
+}
+
+// Stop the meeting countdown timer
+function stopMeetingCountdown() {
+    if (AppState.meetingCountdownTimer) {
+        clearInterval(AppState.meetingCountdownTimer);
+        AppState.meetingCountdownTimer = null;
+        console.log('Meeting countdown stopped');
+    }
+}
+
+// Skip the countdown and navigate immediately
+function skipCountdownAndNavigate() {
+    stopMeetingCountdown();
+    document.getElementById('meeting-countdown')?.classList.add('hidden');
+    navigateToMeetingPoint();
 }
 
 // Lost member perspective functions
@@ -1082,12 +1150,15 @@ function hideAllScenario2Panels() {
 // ============================================
 // View Management
 // ============================================
-function hideAllPanels() {
+function hideAllPanels(preserveNavigation = false) {
     DOM.foodPanel?.classList.add('hidden');
     DOM.stallCard?.classList.add('hidden');
     DOM.facilitiesPanel?.classList.add('hidden');
     DOM.continuePrompt?.classList.add('hidden');
-    DOM.arNavigation?.classList.add('hidden');
+    // Only hide navigation if not preserving it
+    if (!preserveNavigation) {
+        DOM.arNavigation?.classList.add('hidden');
+    }
     // Scenario 3 panels
     DOM.stallListPanel?.classList.add('hidden');
     DOM.arrivedPanel?.classList.add('hidden');
@@ -1097,15 +1168,25 @@ function hideAllPanels() {
 }
 
 function showView(viewId) {
-    hideAllPanels();
+    // Check if we're currently navigating - preserve navigation arrows for certain views
+    const preserveNav = AppState.isNavigating && (viewId === 'facilities' || viewId === 'food');
+
+    hideAllPanels(preserveNav);
     AppState.currentView = viewId;
 
     switch (viewId) {
         case 'food':
             DOM.foodPanel?.classList.remove('hidden');
+            if (!AppState.isNavigating) {
+                setActiveGoal('What are you looking for?');
+            }
             break;
         case 'facilities':
             DOM.facilitiesPanel?.classList.remove('hidden');
+            // Don't change goal if navigating - it will stay as "Navigating to..."
+            if (!AppState.isNavigating) {
+                setActiveGoal('Select a facility');
+            }
             break;
         case 'stall':
             DOM.stallCard?.classList.remove('hidden');
@@ -1349,7 +1430,106 @@ function triggerGesture(type) {
         DOM.gestureFeedback.classList.add('hidden');
     }, 600);
 
-    console.log(`Gesture: ${type === 'confirm' ? 'Head Nod (Confirm)' : 'Head Shake (Cancel)'}`);
+    // PERFORM ACTUAL ACTIONS
+    if (type === 'confirm') {
+        // NOD: Click on the currently gazed element
+        handleNodConfirm();
+    } else if (type === 'cancel') {
+        // SHAKE: Cancel/close current view
+        handleShakeCancel();
+    }
+}
+
+// Handle Nod (N key) - Confirm/Select the currently gazed element
+function handleNodConfirm() {
+    // Find the element currently being gazed at
+    const gazeTarget = document.querySelector('.gaze-target.gaze-hover');
+
+    if (gazeTarget) {
+        console.log('Nod: Confirming selection on', gazeTarget);
+        gazeTarget.click();
+    } else {
+        console.log('Nod: No gaze target currently highlighted');
+    }
+}
+
+// Handle Shake (S key) - Cancel/Close/Go Back
+function handleShakeCancel() {
+    console.log('Shake: Canceling current action');
+
+    // Priority order for what to cancel/close:
+
+    // 1. If navigating, cancel navigation
+    if (AppState.isNavigating) {
+        cancelNavigation();
+        return;
+    }
+
+    // 2. If there's a modal open (location/time selector, member details), close it
+    if (DOM.locationSelector && !DOM.locationSelector.classList.contains('hidden')) {
+        DOM.locationSelector.classList.add('hidden');
+        setActiveGoal('Select an action for lost member');
+        return;
+    }
+    if (DOM.timeSelector && !DOM.timeSelector.classList.contains('hidden')) {
+        DOM.timeSelector.classList.add('hidden');
+        DOM.locationSelector.classList.remove('hidden');
+        setActiveGoal('Select a meeting point');
+        return;
+    }
+    if (DOM.memberDetailsModal && !DOM.memberDetailsModal.classList.contains('hidden')) {
+        closeMemberDetails();
+        return;
+    }
+
+    // 3. If there's an alert popup visible, dismiss it
+    const alertPopup = document.querySelector('.alert-popup:not(.hidden)');
+    if (alertPopup) {
+        alertPopup.classList.add('hidden');
+        setActiveGoal('Welcome to the Christmas Market');
+        return;
+    }
+
+    // 4. If continue prompt is visible, select "No"
+    if (DOM.continuePrompt && !DOM.continuePrompt.classList.contains('hidden')) {
+        handleContinueNo();
+        return;
+    }
+
+    // 5. If arrived panel is visible, end route
+    if (DOM.arrivedPanel && !DOM.arrivedPanel.classList.contains('hidden')) {
+        endRoute();
+        return;
+    }
+
+    // 6. If stall list panel is visible, go back to food panel
+    if (DOM.stallListPanel && !DOM.stallListPanel.classList.contains('hidden')) {
+        handlePanelBack('stall-list');
+        return;
+    }
+
+    // 7. If any panel is open, close it
+    const openPanels = [DOM.foodPanel, DOM.stallCard, DOM.facilitiesPanel, DOM.groupPanel];
+    for (const panel of openPanels) {
+        if (panel && !panel.classList.contains('hidden')) {
+            // Don't close group panel during active scenario
+            if (panel === DOM.groupPanel) {
+                const isScenarioActive = AppState.groupMembers.some(m => m.isLost);
+                if (isScenarioActive) continue;
+            }
+            panel.classList.add('hidden');
+            setActiveGoal('Welcome to the Christmas Market');
+            return;
+        }
+    }
+
+    // 8. If menu is open, close it
+    if (AppState.menuOpen) {
+        toggleMenu();
+        return;
+    }
+
+    console.log('Shake: Nothing to cancel');
 }
 
 // ============================================
