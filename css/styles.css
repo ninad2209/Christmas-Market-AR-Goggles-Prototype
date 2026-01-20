@@ -1851,33 +1851,3 @@ html, body {
     font-size: var(--font-size-xs);
     color: var(--text-muted);
 }
-
-/* Meeting Countdown Timer */
-.countdown-timer {
-    display: inline-block;
-    font-size: var(--font-size-2xl);
-    font-weight: 700;
-    color: var(--ar-blue);
-    background: rgba(0, 170, 255, 0.2);
-    padding: var(--spacing-xs) var(--spacing-md);
-    border-radius: var(--radius-md);
-    min-width: 60px;
-    animation: timerPulse 1s ease-in-out infinite;
-}
-
-@keyframes timerPulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-}
-
-.alert-btn.secondary {
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid var(--panel-border);
-    color: var(--text-secondary);
-}
-
-.alert-btn.secondary:hover {
-    background: var(--ar-blue-dim);
-    border-color: var(--ar-blue);
-    color: var(--ar-blue);
-}
